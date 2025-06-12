@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Matrix Chatbot</title>
+<style>
+  /* Matrix background canvas fills screen */
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    overflow: hidden;
+    background: black;
+    font-family: 'Courier New', Courier, monospace;
+    color: #0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #matrix {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 0;
+  }
+  /* Chat container on top */
+  .chat-container {
+    position: relative;
+    z-index: 1;
+    width: 350px;
+    max-height: 80vh;
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid #0f0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-window {
+    flex-grow: 1;
+    padding: 10px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .chat-input {
+    border-top: 2px solid #0f0;
+    display: flex;
+  }
+  .chat-input input {
+    flex-grow: 1;
+    padding: 10px;
+    border: none;
+    background: black;
+    color: #0f0;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+  }
+  .chat-input input:focus {
+    outline: none;
+  }
+  .chat-input button {
+    background: #0f0;
+    border: none;
+    color: black;
+    font-weight: bold;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+  }
+  .chat-input button:hover {
+    background: #4caf50;
+  }
+  /* Messages */
+  .message {
+    margin-bottom: 12px;
+  }
+  .message.user {
+    text-align: right;
+  }
+  .message.user span {
+    background: #0f0;
+    color: black;
+    padding: 5px 10px;
+    border-radius: 12px 12px 0 12px;
+    display: inline-block;
+    max-width: 80%;
+  }
+  .message.bot span {
+    background: #002200;
+    color: #0f0;
+    padding: 5px 10px;
+    border-radius: 12px 12px 12px 0;
+    display: inline-block;
+    max-width: 80%;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div class="chat-container">
+  <div class="chat-window" id="chatWindow"></div>
+  <form id="chatForm" class="chat-input">
+    <input type="text" id="chatInput" placeholder="Ask me anything..." autocomplete="off" required />
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+// MATRIX BACKGROUND
+
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+
+let width = window.innerWidth;
+let height = window.innerHeight;
+canvas.width = width;
+canvas.height = height;
+
+const letters = 'アカサタナハマヤラワABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const fontSize = 16;
+const columns = Math.floor(width / fontSize);
+const drops = [];
+
+for(let x = 0; x < columns; x++) drops[x] = Math.random() * height;
+
+function draw() {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+  ctx.fillRect(0, 0, width, height);
+  
+  ctx.fillStyle = '#0f0';
+  ctx.font = fontSize + 'px monospace';
+  
+  for(let i = 0; i < drops.length; i++) {
+    const text = letters.charAt(Math.floor(Math.random() * letters.length));
+    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+    
+    if (drops[i] * fontSize > height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
+    drops[i]++;
+  }
+}
+
+setInterval(draw, 40);
+
+window.addEventListener('resize', () => {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
+});
+
+// CHATBOT
+
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatInput');
+const chatWindow = document.getElementById('chatWindow');
+
+// Define simple Q&A pairs here:
+const qa = {
+  "hello": "Hi there! How can I assist you?",
+  "how are you": "I'm just code, but I'm running smoothly! Thanks for asking.",
+  "owner": "I was coded by fortune.",
+  "help": "You can ask me anything like 'hello', 'how are are you', or 'owner'.",
+  "bye": "Goodbye! Have a great day Fortune!",
+  "hey":"do you want some coffee?",
+  // add more questions & responses here
+};
+
+// Normalize input function:
+function normalize(text) {
+  return text.toLowerCase().replace(/[^\w\s]/gi, '').trim();
+}
+
+// Append message to chat window
+function appendMessage(sender, text) {
+  const msgDiv = document.createElement('div');
+  msgDiv.classList.add('message', sender);
+  const span = document.createElement('span');
+  span.textContent = text;
+  msgDiv.appendChild(span);
+  chatWindow.appendChild(msgDiv);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+chatForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const userInput = chatInput.value.trim();
+  if (!userInput) return;
+  
+  appendMessage('user', userInput);
+  chatInput.value = '';
+  
+  const normalized = normalize(userInput);
+  let response = "Sorry, I don't understand that.";
+  
+  for (const question in qa) {
+    if (normalized.includes(question)) {
+      response = qa[question];
+      break;
+    }
+  }
+  
+  setTimeout(() => {
+    appendMessage('bot', response);
+  }, 600); // simulate thinking delay
+});
+</script>
+
+</body>
+</html>
